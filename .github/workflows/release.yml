@@ -1,0 +1,54 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  release:
+    name: Release ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        include:
+          - os: ubuntu-latest
+            binary_name: md2tex
+            extension: tar.gz
+            archive_prefix: tar
+          - os: macos-latest
+            binary_name: md2tex
+            extension: tar.gz
+            archive_prefix: tar
+          - os: windows-latest
+            binary_name: md2tex.exe
+            extension: zip
+            archive_prefix: ""
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Build release
+        run: cargo build --release
+
+      - name: Create archive
+        shell: bash
+        run: |
+          ARCH=$(echo ${{ matrix.os }} | grep -oP '\w+-latest' | sed 's/-latest//')
+          if [ "${{ matrix.extension }}" = "zip" ]; then
+            powershell -Command "Compress-Archive -Path target/release/${{ matrix.binary_name }} -DestinationPath md2tex-${ARCH}.zip"
+          else
+            tar -czvf md2tex-${ARCH}.tar.gz -C target/release ${{ matrix.binary_name }}
+          fi
+
+      - name: Upload Release Asset
+        uses: softprops/action-gh-release@v1
+        with:
+          files: md2tex-*.tar.gz,md2tex-*.zip
+          generate_release_notes: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
