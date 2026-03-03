@@ -5,6 +5,9 @@ on:
     tags:
       - 'v*'
 
+permissions:
+  contents: write
+
 jobs:
   release:
     name: Release ${{ matrix.os }}
@@ -60,7 +63,7 @@ jobs:
       - name: Upload Release Asset
         uses: softprops/action-gh-release@v1
         with:
-          files: target/release/md2tex-*.tar.gz,target/release/md2tex-*.zip
+          files: target/release/md2tex-${{ matrix.arch }}.${{ matrix.extension }}
           generate_release_notes: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
