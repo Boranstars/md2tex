@@ -39,16 +39,17 @@ jobs:
         shell: bash
         run: |
           ARCH=$(echo ${{ matrix.os }} | grep -oP '\w+-latest' | sed 's/-latest//')
+          cd target/release
           if [ "${{ matrix.extension }}" = "zip" ]; then
-            powershell -Command "Compress-Archive -Path target/release/${{ matrix.binary_name }} -DestinationPath md2tex-${ARCH}.zip"
+            powershell -Command "Compress-Archive -Path ${{ matrix.binary_name }} -DestinationPath md2tex-${ARCH}.zip"
           else
-            tar -czvf md2tex-${ARCH}.tar.gz -C target/release ${{ matrix.binary_name }}
+            tar -czvf md2tex-${ARCH}.tar.gz ${{ matrix.binary_name }}
           fi
 
       - name: Upload Release Asset
         uses: softprops/action-gh-release@v1
         with:
-          files: md2tex-*.tar.gz,md2tex-*.zip
+          files: target/release/md2tex-*.tar.gz,target/release/md2tex-*.zip
           generate_release_notes: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
