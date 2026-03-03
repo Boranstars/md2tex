@@ -42,17 +42,19 @@ jobs:
         shell: bash
         run: |
           cd target/release
-          # 查找实际的二进制文件名
-          BINARY=$(ls -1 md2tex* 2>/dev/null | head -1)
+          # 查找实际的二进制文件名（可能是 md2tex 或 md2tex-converter）
+          BINARY=$(ls -1 md2tex* 2>/dev/null | grep -v '\.d$' | head -1)
           if [ -z "$BINARY" ]; then
             echo "No md2tex binary found!"
             exit 1
           fi
           echo "Found binary: $BINARY"
+          # 重命名为标准名称 md2tex
+          mv "$BINARY" md2tex
           if [ "${{ matrix.extension }}" = "zip" ]; then
-            powershell -Command "Compress-Archive -Path $BINARY -DestinationPath md2tex-${{ matrix.arch }}.zip"
+            powershell -Command "Compress-Archive -Path md2tex -DestinationPath md2tex-${{ matrix.arch }}.zip"
           else
-            tar -czvf md2tex-${{ matrix.arch }}.tar.gz $BINARY
+            tar -czvf md2tex-${{ matrix.arch }}.tar.gz md2tex
           fi
 
       - name: Upload Release Asset
