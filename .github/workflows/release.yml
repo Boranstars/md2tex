@@ -15,15 +15,15 @@ jobs:
           - os: ubuntu-latest
             binary_name: md2tex
             extension: tar.gz
-            archive_prefix: tar
+            arch: linux-amd64
           - os: macos-latest
             binary_name: md2tex
             extension: tar.gz
-            archive_prefix: tar
+            arch: darwin-arm64
           - os: windows-latest
             binary_name: md2tex.exe
             extension: zip
-            archive_prefix: ""
+            arch: windows-amd64
 
     steps:
       - name: Checkout code
@@ -38,12 +38,11 @@ jobs:
       - name: Create archive
         shell: bash
         run: |
-          ARCH=$(echo ${{ matrix.os }} | grep -oP '\w+-latest' | sed 's/-latest//')
           cd target/release
           if [ "${{ matrix.extension }}" = "zip" ]; then
-            powershell -Command "Compress-Archive -Path ${{ matrix.binary_name }} -DestinationPath md2tex-${ARCH}.zip"
+            powershell -Command "Compress-Archive -Path ${{ matrix.binary_name }} -DestinationPath md2tex-${{ matrix.arch }}.zip"
           else
-            tar -czvf md2tex-${ARCH}.tar.gz ${{ matrix.binary_name }}
+            tar -czvf md2tex-${{ matrix.arch }}.tar.gz ${{ matrix.binary_name }}
           fi
 
       - name: Upload Release Asset
