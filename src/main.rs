@@ -215,8 +215,5 @@ fn main() {
     file.write_all(full_document.as_bytes())
         .expect("无法写入输出文件");
 
-    println!(
-        "转换成功！LaTeX 文件已保存至：{}",
-        output_path.display()
-    );
+    println!("转换成功！LaTeX 文件已保存至：{}", output_path.display());
 }
