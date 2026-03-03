@@ -35,14 +35,24 @@ jobs:
       - name: Build release
         run: cargo build --release
 
+      - name: List release files
+        run: ls -la target/release/ | grep -E '^-.*md2tex'
+
       - name: Create archive
         shell: bash
         run: |
           cd target/release
+          # 查找实际的二进制文件名
+          BINARY=$(ls -1 md2tex* 2>/dev/null | head -1)
+          if [ -z "$BINARY" ]; then
+            echo "No md2tex binary found!"
+            exit 1
+          fi
+          echo "Found binary: $BINARY"
           if [ "${{ matrix.extension }}" = "zip" ]; then
-            powershell -Command "Compress-Archive -Path ${{ matrix.binary_name }} -DestinationPath md2tex-${{ matrix.arch }}.zip"
+            powershell -Command "Compress-Archive -Path $BINARY -DestinationPath md2tex-${{ matrix.arch }}.zip"
           else
-            tar -czvf md2tex-${{ matrix.arch }}.tar.gz ${{ matrix.binary_name }}
+            tar -czvf md2tex-${{ matrix.arch }}.tar.gz $BINARY
           fi
 
       - name: Upload Release Asset
