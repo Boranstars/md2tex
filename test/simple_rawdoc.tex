@@ -3,6 +3,7 @@
 \usepackage{amssymb}
 \usepackage{amsfonts}
 \usepackage{xcolor}
+\usepackage{graphicx}
 \pagestyle{plain}
 \ctexset{
     section = {name = {,、}, number = \chinese{section}},
@@ -56,17 +57,17 @@ fn main() {
 
 这是块级公式：
 
-\begin{equation*}
+\begin{equation}
 \int_{-\infty}^{\infty} e^{-x^2} dx = \sqrt{\pi}
-\end{equation*}
+\end{equation}
 
-这是第二个块级公式： \begin{equation*}
+这是第二个块级公式： \begin{equation}
 f(x) = \sum_{n=0}^{\infty} \frac{f^{(n)}(0)}{n!} x^n
-\end{equation*}
+\end{equation}
 
-给公式添加颜色： \begin{equation*}
+给公式添加颜色： \begin{equation}
 \textcolor{red}{E=mc^2}
-\end{equation*}
+\end{equation}
 
 这是一个有编号的公式：
 
@@ -78,6 +79,18 @@ a^2 + b^2 = c^2
 \end{verbatim}
 
 公式中的特殊字符如 \texttt{\textasciicircum{}}, \texttt{\_}, \texttt{\{}, \texttt{\}} 不应被转义。
+
+
+\subsection{图片测试}
+
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=0.8\textwidth]{Gemini_Generated_Image_a40x9qa40x9qa40x.png}
+\caption{项目印象图}
+\end{figure}
+
+
 
 
 

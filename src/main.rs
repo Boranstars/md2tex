@@ -120,6 +120,7 @@ fn latex_template(content: &str) -> String {
 \usepackage{{amssymb}}
 \usepackage{{amsfonts}}
 \usepackage{{xcolor}}
+\usepackage{{graphicx}}
 \pagestyle{{plain}}
 \ctexset{{
     section = {{name = {{,、}}, number = \chinese{{section}}}},
@@ -288,6 +289,15 @@ fn convert_markdown_to_latex(
             }
             Event::End(TagEnd::BlockQuote(_)) => {
                 latex_content.push_str("\n\\end{quote}\n\n");
+            }
+            // 图片
+            Event::Start(Tag::Image { dest_url, .. }) => {
+                latex_content.push_str("\n\\begin{figure}[htbp]\n\\centering\n\\includegraphics[width=0.8\\textwidth]{");
+                latex_content.push_str(&dest_url);
+                latex_content.push_str("}\n\\caption{");
+            }
+            Event::End(TagEnd::Image) => {
+                latex_content.push_str("}\n\\end{figure}\n\n");
             }
             // 链接
             Event::Start(Tag::Link { .. }) => {}
