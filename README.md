@@ -1,5 +1,9 @@
 # md2tex
 
+[![CI](https://github.com/Boranstars/md2tex/actions/workflows/ci.yml/badge.svg)](https://github.com/Boranstars/md2tex/actions)
+[![Release](https://img.shields.io/github/v/release/Boranstars/md2tex)](https://github.com/Boranstars/md2tex/releases/latest)
+[![Platforms](https://img.shields.io/badge/platforms-macOS%20%7C%20Linux%20%7C%20Windows-blue)](https://github.com/Boranstars/md2tex/releases)
+
 一个将 Markdown 文档转换为中文 LaTeX (ctexart) 源码的命令行工具。
 
 [English Version](./README-en.md)
@@ -20,14 +24,12 @@
 - **块级格式化**：代码块和列表环境自动前后空行，提升 LaTeX 源码可读性
 - **零运行时依赖**：编译为单个可执行文件，无额外依赖
 
-## 快速开始
+## 安装方式
 
-### 前置要求
+### 从源码构建
 
+前置要求：
 - Rust 1.70+ (通过 [rustup](https://rustup.rs/) 安装)
-- (可选) [Tectonic](https://tectonic-typesetting.github.io/) 用于直接编译 PDF
-
-### 运行方式
 
 ```bash
 # 克隆项目
@@ -37,15 +39,30 @@ cd md2tex
 # 开发模式运行
 cargo run -- your_document.md
 
-# 指定输出文件
-cargo run -- your_document.md output.tex
-
-# 全局启用公式编号
-cargo run -- your_document.md -n
-
 # 编译发布版本
 cargo build --release
 ./target/release/md2tex your_document.md
+```
+
+### 预编译二进制
+
+从 [Release](https://github.com/Boranstars/md2tex/releases) 页面下载对应平台的预编译二进制文件。
+
+## 运行方式
+
+```bash
+# 基本用法：转换 Markdown 文件
+md2tex your_document.md
+
+# 指定输出文件
+md2tex your_document.md output.tex
+
+# 全局启用公式编号
+md2tex your_document.md -n
+md2tex your_document.md --number-equations
+
+# 查看帮助
+md2tex --help
 ```
 
 ### 编译为 PDF

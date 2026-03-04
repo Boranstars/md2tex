@@ -1,5 +1,5 @@
 [package]
-name = "md2tex-converter"
+name = "md2tex"
 version = "0.2.2"
 edition = "2024"
 

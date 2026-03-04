@@ -1,5 +1,9 @@
 # md2tex
 
+[![CI](https://github.com/Boranstars/md2tex/actions/workflows/ci.yml/badge.svg)](https://github.com/Boranstars/md2tex/actions)
+[![Release](https://img.shields.io/github/v/release/Boranstars/md2tex)](https://github.com/Boranstars/md2tex/releases/latest)
+[![Platforms](https://img.shields.io/badge/platforms-macOS%20%7C%20Linux%20%7C%20Windows-blue)](https://github.com/Boranstars/md2tex/releases)
+
 A command-line tool that converts Markdown documents to Chinese LaTeX (ctexart) source code.
 
 [中文版本](./README.md)
@@ -20,14 +24,12 @@ This project is a **Vibe Coding** exploration experiment—AI-assisted efficient
 - **Block-Level Formatting**: Code blocks and list environments automatically have blank lines before/after for better LaTeX source readability
 - **Zero Runtime Dependencies**: Compiles to a single executable with no additional dependencies
 
-## Quick Start
+## Installation
 
-### Prerequisites
+### Build from Source
 
+Prerequisites:
 - Rust 1.70+ (installed via [rustup](https://rustup.rs/))
-- (Optional) [Tectonic](https://tectonic-typesetting.github.io/) for direct PDF compilation
-
-### Usage
 
 ```bash
 # Clone the project
@@ -37,15 +39,30 @@ cd md2tex
 # Run in development mode
 cargo run -- your_document.md
 
-# Specify output file
-cargo run -- your_document.md output.tex
-
-# Enable global equation numbering
-cargo run -- your_document.md -n
-
 # Build release version
 cargo build --release
 ./target/release/md2tex your_document.md
+```
+
+### Pre-built Binaries
+
+Download pre-built binaries for your platform from the [Releases](https://github.com/Boranstars/md2tex/releases) page.
+
+## Usage
+
+```bash
+# Basic usage: convert Markdown file
+md2tex your_document.md
+
+# Specify output file
+md2tex your_document.md output.tex
+
+# Enable global equation numbering
+md2tex your_document.md -n
+md2tex your_document.md --number-equations
+
+# View help
+md2tex --help
 ```
 
 ### Compile to PDF
