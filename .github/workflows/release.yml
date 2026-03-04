@@ -45,21 +45,31 @@ jobs:
         shell: bash
         run: |
           cd target/release
-          # 查找实际的二进制文件名（可能是 md2tex 或 md2tex-converter）
+          # 查找实际的二进制文件名
           BINARY=$(ls -1 md2tex* 2>/dev/null | grep -v '\.d$' | head -1)
           if [ -z "$BINARY" ]; then
             echo "No md2tex binary found!"
             exit 1
           fi
           echo "Found binary: $BINARY"
-          # 只有当二进制文件名与目标不同时才重命名
-          if [ "$BINARY" != "md2tex" ] && [ "$BINARY" != "md2tex.exe" ]; then
-            mv "$BINARY" md2tex
-          fi
+
+          # 根据平台确定目标名称
           if [ "${{ matrix.extension }}" = "zip" ]; then
-            powershell -Command "Compress-Archive -Path md2tex -DestinationPath md2tex-${{ matrix.arch }}.zip"
+            TARGET_NAME="md2tex.exe"
           else
-            tar -czvf md2tex-${{ matrix.arch }}.tar.gz md2tex
+            TARGET_NAME="md2tex"
+          fi
+
+          # 如果文件名与目标不同，则重命名
+          if [ "$BINARY" != "$TARGET_NAME" ]; then
+            mv "$BINARY" "$TARGET_NAME"
+          fi
+
+          # 压缩
+          if [ "${{ matrix.extension }}" = "zip" ]; then
+            powershell -Command "Compress-Archive -Path $TARGET_NAME -DestinationPath md2tex-${{ matrix.arch }}.zip"
+          else
+            tar -czvf md2tex-${{ matrix.arch }}.tar.gz $TARGET_NAME
           fi
 
       # 仅在主构建（ubuntu）时提取标签消息
