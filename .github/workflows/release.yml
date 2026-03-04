@@ -52,8 +52,10 @@ jobs:
             exit 1
           fi
           echo "Found binary: $BINARY"
-          # 重命名为标准名称 md2tex
-          mv "$BINARY" md2tex
+          # 只有当二进制文件名与目标不同时才重命名
+          if [ "$BINARY" != "md2tex" ] && [ "$BINARY" != "md2tex.exe" ]; then
+            mv "$BINARY" md2tex
+          fi
           if [ "${{ matrix.extension }}" = "zip" ]; then
             powershell -Command "Compress-Archive -Path md2tex -DestinationPath md2tex-${{ matrix.arch }}.zip"
           else
