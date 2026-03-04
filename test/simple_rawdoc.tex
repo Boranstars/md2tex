@@ -1,5 +1,8 @@
 \documentclass{ctexart}
 \usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{amsfonts}
+\usepackage{xcolor}
 \pagestyle{plain}
 \ctexset{
     section = {name = {,、}, number = \chinese{section}},
@@ -53,10 +56,26 @@ fn main() {
 
 这是块级公式：
 
-$$
+\begin{equation*}
 \int_{-\infty}^{\infty} e^{-x^2} dx = \sqrt{\pi}
-$$
+\end{equation*}
 
+这是第二个块级公式： \begin{equation*}
+f(x) = \sum_{n=0}^{\infty} \frac{f^{(n)}(0)}{n!} x^n
+\end{equation*}
+
+给公式添加颜色： \begin{equation*}
+\textcolor{red}{E=mc^2}
+\end{equation*}
+
+这是一个有编号的公式：
+
+
+\begin{verbatim}
+\begin{equation}
+a^2 + b^2 = c^2
+\end{equation}
+\end{verbatim}
 
 公式中的特殊字符如 \texttt{\textasciicircum{}}, \texttt{\_}, \texttt{\{}, \texttt{\}} 不应被转义。
 

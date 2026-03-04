@@ -32,5 +32,23 @@ $$
 \int_{-\infty}^{\infty} e^{-x^2} dx = \sqrt{\pi}
 $$
 
+这是第二个块级公式：
+$$
+f(x) = \sum_{n=0}^{\infty} \frac{f^{(n)}(0)}{n!} x^n
+$$
+
+给公式添加颜色：
+$$
+\textcolor{red}{E=mc^2}
+$$
+
+
+这是一个有编号的公式：
+```latex
+\begin{equation}
+a^2 + b^2 = c^2
+\end{equation}
+```
+
 公式中的特殊字符如 `^`, `_`, `{`, `}` 不应被转义。
 

@@ -5,7 +5,17 @@
       "Bash(cargo clippy)",
       "Bash(cargo run -- test/simple_rawdoc.md)",
       "Bash(tectonic simple_rawdoc.tex)",
-      "Bash(ls -la test/*.pdf test/*.tex)"
+      "Bash(ls -la test/*.pdf test/*.tex)",
+      "Bash(cargo run -- --help)",
+      "WebFetch(domain:docs.rs)",
+      "Bash(cargo run -- '/Users/boran/Program/blog articles/状态空间方程建立.md')",
+      "Bash(tectonic 状态空间方程建立.tex)",
+      "Bash(cargo check)",
+      "Bash(cargo run -- \"/Users/boran/Program/blog articles/连续控制系统状态空间方程的解.md\")",
+      "Bash(tectonic \"/Users/boran/Program/blog articles/连续控制系统状态空间方程的解.tex\")",
+      "Bash(cargo fmt --check)",
+      "Bash(cargo fmt)",
+      "Bash(cargo test)"
     ]
   }
 }

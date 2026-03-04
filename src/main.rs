@@ -19,6 +19,10 @@ struct Args {
     /// 输出的 LaTeX 文件路径（可选，默认与输入文件同名）
     #[arg(index = 2)]
     output: Option<String>,
+
+    /// 为所有块级公式自动添加编号
+    #[arg(short = 'n', long = "number-equations")]
+    number_equations: bool,
 }
 
 /// 预编译正则表达式
@@ -72,13 +76,14 @@ fn pre_process_math(markdown: &str) -> (String, HashMap<String, (String, bool)>)
 
 /// 将数学公式转换为 LaTeX
 /// 处理 align* -> aligned 替换，并添加对应的 $ 或 $$ 包裹
-fn convert_math_to_latex(math_content: &str, is_block: bool) -> String {
+fn convert_math_to_latex(math_content: &str, is_block: bool, number_equations: bool) -> String {
     // 预处理：移除公式内部的空行（连续换行符）以避免 LaTeX 编译错误
     // 使用正则将连续两个以上换行符替换为一个（移除空行）
     static MULTIPLE_NEWLINES: Lazy<Regex> = Lazy::new(|| Regex::new(r"\n{2,}").unwrap());
     let cleaned = MULTIPLE_NEWLINES.replace_all(math_content, "\n");
 
     // 将 align* 替换为 aligned 避免与 $$ 嵌套冲突
+    // 但如果用户已经明确使用了无星号的 align 或 equation，则不替换
     let processed = cleaned
         .replace("\\begin{align*}", "\\begin{aligned}")
         .replace("\\end{align*}", "\\end{aligned}")
@@ -86,7 +91,22 @@ fn convert_math_to_latex(math_content: &str, is_block: bool) -> String {
         .replace("\\end{align}", "\\end{aligned}");
 
     if is_block {
-        format!("$${}$$\n", processed)
+        let trimmed = processed.trim();
+
+        // 检查用户是否已经明确指定了无星号的公式环境
+        let has_explicit_numbered =
+            trimmed.starts_with("\\begin{align}") || trimmed.starts_with("\\begin{equation}");
+
+        if has_explicit_numbered {
+            // 用户明确指定了编号格式，保留原样
+            trimmed.to_string()
+        } else if number_equations {
+            // 全局开启编号，使用 equation 环境
+            format!("\\begin{{equation}}\n{}\n\\end{{equation}}", trimmed)
+        } else {
+            // 默认使用 equation* 环境，便于用户后续手动添加编号（只需删除星号）
+            format!("\\begin{{equation*}}\n{}\n\\end{{equation*}}", trimmed)
+        }
     } else {
         format!("${}$", processed)
     }
@@ -97,6 +117,9 @@ fn latex_template(content: &str) -> String {
     format!(
         r#"\documentclass{{ctexart}}
 \usepackage{{amsmath}}
+\usepackage{{amssymb}}
+\usepackage{{amsfonts}}
+\usepackage{{xcolor}}
 \pagestyle{{plain}}
 \ctexset{{
     section = {{name = {{,、}}, number = \chinese{{section}}}},
@@ -123,6 +146,7 @@ static MATH_TOKEN_REGEX: Lazy<Regex> = Lazy::new(|| Regex::new(r"(\{MATH\d+\})")
 fn convert_markdown_to_latex(
     markdown: &str,
     math_tokens: &HashMap<String, (String, bool)>,
+    number_equations: bool,
 ) -> String {
     // pulldown-cmark 使用默认选项，不需要 ENABLE_MATH
     // 因为数学公式已经在预处理阶段提取并替换为占位符了
@@ -183,7 +207,11 @@ fn convert_markdown_to_latex(
                             // 替换占位符为数学公式
                             // 从 HashMap 中直接解包出 (公式内容, is_block) 元组
                             if let Some((math_content, is_block)) = math_tokens.get(token) {
-                                result.push_str(&convert_math_to_latex(math_content, *is_block));
+                                result.push_str(&convert_math_to_latex(
+                                    math_content,
+                                    *is_block,
+                                    number_equations,
+                                ));
                             }
 
                             last_end = full_match.end();
@@ -311,7 +339,8 @@ fn main() {
     let (processed_markdown, math_tokens) = pre_process_math(&markdown_content);
 
     // 转换为 LaTeX
-    let latex_content = convert_markdown_to_latex(&processed_markdown, &math_tokens);
+    let latex_content =
+        convert_markdown_to_latex(&processed_markdown, &math_tokens, args.number_equations);
 
     // 包裹文档模板
     let full_document = latex_template(&latex_content);
