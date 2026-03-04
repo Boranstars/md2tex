@@ -31,3 +31,6 @@ Thumbs.db
 *.blg
 *-blx.bib
 *.xdv
+
+# pdf
+*.pdf
