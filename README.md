@@ -2,6 +2,8 @@
 
 一个将 Markdown 文档转换为中文 LaTeX (ctexart) 源码的命令行工具。
 
+[English Version](./README-en.md)
+
 ## 项目简介
 
 本项目是一次 **Vibe Coding** 探索实验——由 AI 辅助完成，从想法到代码的高效转化。项目基于 Rust 语言实现，利用 `pulldown-cmark` 解析 Markdown AST，并输出可直接编译为 PDF 的 LaTeX 源码。
