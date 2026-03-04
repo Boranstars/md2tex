@@ -18,3 +18,19 @@
 3. 自动编号修复：使用 `\ctexset{section = {name = {,、}, number = \chinese{section}}}` 规范标题。
 4. Markdown 的 `# 标题` 映射为 `\section{}`，`## 标题` 映射为 `\subsection{}`。
 5. Markdown 的代码块映射为 `verbatim` 环境或引入 `listings` 宏包处理。
+
+# Git Workflow
+
+## 提交规范
+格式：`<type>: <description>`
+
+类型：`feat`(新功能) | `fix`(修复) | `docs`(文档) | `ci`(CI/CD) | `refactor`(重构)
+
+示例：`feat: 添加数学公式支持`
+
+## 发布流程
+**重要：必须严格按顺序执行**
+1. 更新 `Cargo.toml` 版本号
+2. 提交代码并 push 到远程仓库：`git add . && git commit -m "..." && git push origin main`，这会触发 CI 流程进行自动测试
+3. 确认 CI 流程通过后，创建 Git 标签并附加版本说明：`git tag -a v0.2.0 -m "Release version 0.2.0: 添加数学公式支持"`
+4. 推送标签到远程仓库：`git push origin v0.2.0`，这会触发 Release 流程进行自动构建和发布
