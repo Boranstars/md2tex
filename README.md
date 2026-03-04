@@ -11,6 +11,8 @@
 ## 核心特性
 
 - **Markdown → LaTeX 转换**：支持标题、加粗、斜体、行内代码、代码块、列表等常用语法
+- **数学公式支持**：原生支持 `$...$` 行内公式和 `$$...$$` 块级公式，自动转换为 `equation*` 环境
+- **公式编号开关**：支持 `-n/--number-equations` 参数全局启用公式编号，也可手动编辑 `.tex` 文件删除星号添加编号
 - **中文优化**：自动套用 `ctexart` 模板，中文多级标题使用 `\chinese{}` 编号
 - **单遍转义**：自定义转义算法，避免链式替换导致的二次转义污染
 - **块级格式化**：代码块和列表环境自动前后空行，提升 LaTeX 源码可读性
@@ -35,6 +37,9 @@ cargo run -- your_document.md
 
 # 指定输出文件
 cargo run -- your_document.md output.tex
+
+# 全局启用公式编号
+cargo run -- your_document.md -n
 
 # 编译发布版本
 cargo build --release
@@ -62,6 +67,8 @@ pdflatex your_document.tex
 | `` `code` `` | `\texttt{code}` |
 | ` ```rust ... ``` ` | `\begin{verbatim}...\end{verbatim}` |
 | `- item` | `\begin{itemize}\item item\end{itemize}` |
+| `$E=mc^2$` | `$E=mc^2$` (行内公式) |
+| `$$E=mc^2$$` | `\begin{equation*}...\end{equation*}` (块级公式) |
 
 ## 技术栈
 
@@ -72,7 +79,7 @@ pdflatex your_document.tex
 
 ## 未来路线图
 
-- [ ] **数学公式原生穿透**：支持 `$...$` 和 `$$...$$` 语法，LaTeX 公式直接透传
+- [x] **数学公式原生穿透**：支持 `$...$` 和 `$$...$$` 语法，LaTeX 公式直接透传
 - [ ] **自动图片渲染**：支持 `![alt](path/to/image.png)` 自动转换为 `\includegraphics{}`
 - [ ] **表格支持**：解析 Markdown 表格转换为 LaTeX `tabular` 环境
 - [ ] **更多输出格式**：支持 `ctexbook`、`article` 等不同模板
