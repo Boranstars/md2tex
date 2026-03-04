@@ -1,5 +1,8 @@
 use clap::Parser;
+use once_cell::sync::Lazy;
 use pulldown_cmark::{Event, HeadingLevel, Options, Parser as MdParser, Tag, TagEnd};
+use regex::Regex;
+use std::collections::HashMap;
 use std::fs;
 use std::io::Write;
 use std::path::{Path, PathBuf};
@@ -18,10 +21,82 @@ struct Args {
     output: Option<String>,
 }
 
+/// 预编译正则表达式
+/// 这类似 C++ 中静态编译的正则模式，在程序生命周期内只编译一次
+/// 块级公式：$$...$$，使用 [^$]+? 非贪婪匹配，确保内部不包含 $ 字符
+/// 这样可以避免错位匹配：将 "$$ 公式A $$ 普通文本 $$ 公式B $$" 正确拆分为三个部分
+static BLOCK_MATH_REGEX: Lazy<Regex> = Lazy::new(|| Regex::new(r"\$\$([^$]+?)\$\$").unwrap());
+/// 行内公式：$...$，排除包含 $ 或换行的内容
+/// 注意：必须在所有 $$ 都被替换为占位符后再执行此匹配
+static INLINE_MATH_REGEX: Lazy<Regex> = Lazy::new(|| Regex::new(r"\$([^$\n]+)\$").unwrap());
+
+/// 预处理阶段：从 Markdown 中提取数学公式并替换为占位符
+/// 这类似 C++ 编译器的预处理阶段，在正式解析前展开宏
+///
+/// 返回值：(处理后的文本, 数学公式HashMap)
+/// - 处理后的文本：将公式替换为 {{MATH0}} 占位符（不含下划线，避免被解析为斜体）
+/// - HashMap：key 为占位符，value 为 (原始公式内容, is_block) 元组
+///   - is_block: true 表示块级公式 $$...$$，false 表示行内公式 $...$
+fn pre_process_math(markdown: &str) -> (String, HashMap<String, (String, bool)>) {
+    let mut math_tokens: HashMap<String, (String, bool)> = HashMap::new();
+    let mut token_counter = 0;
+    let mut processed = markdown.to_string();
+
+    // 第一步：先处理块级公式 $$...$$
+    // 必须先处理块级公式，再处理行内公式，避免冲突
+    processed = BLOCK_MATH_REGEX
+        .replace_all(&processed, |caps: &regex::Captures| {
+            let math_content = &caps[1];
+            let token = format!("{{MATH{}}}", token_counter);
+            token_counter += 1;
+            // 显式标记为块级公式
+            math_tokens.insert(token.clone(), (math_content.to_string(), true));
+            token
+        })
+        .to_string();
+
+    // 第二步：处理行内公式 $...$
+    processed = INLINE_MATH_REGEX
+        .replace_all(&processed, |caps: &regex::Captures| {
+            let math_content = &caps[1];
+            let token = format!("{{MATH{}}}", token_counter);
+            token_counter += 1;
+            // 显式标记为行内公式
+            math_tokens.insert(token.clone(), (math_content.to_string(), false));
+            token
+        })
+        .to_string();
+
+    (processed, math_tokens)
+}
+
+/// 将数学公式转换为 LaTeX
+/// 处理 align* -> aligned 替换，并添加对应的 $ 或 $$ 包裹
+fn convert_math_to_latex(math_content: &str, is_block: bool) -> String {
+    // 预处理：移除公式内部的空行（连续换行符）以避免 LaTeX 编译错误
+    // 使用正则将连续两个以上换行符替换为一个（移除空行）
+    static MULTIPLE_NEWLINES: Lazy<Regex> = Lazy::new(|| Regex::new(r"\n{2,}").unwrap());
+    let cleaned = MULTIPLE_NEWLINES.replace_all(math_content, "\n");
+
+    // 将 align* 替换为 aligned 避免与 $$ 嵌套冲突
+    let processed = cleaned
+        .replace("\\begin{align*}", "\\begin{aligned}")
+        .replace("\\end{align*}", "\\end{aligned}")
+        .replace("\\begin{align}", "\\begin{aligned}")
+        .replace("\\end{align}", "\\end{aligned}");
+
+    if is_block {
+        format!("$${}$$\n", processed)
+    } else {
+        format!("${}$", processed)
+    }
+}
+
 /// LaTeX 文档模板
 fn latex_template(content: &str) -> String {
     format!(
         r#"\documentclass{{ctexart}}
+\usepackage{{amsmath}}
 \pagestyle{{plain}}
 \ctexset{{
     section = {{name = {{,、}}, number = \chinese{{section}}}},
@@ -39,64 +114,86 @@ fn latex_template(content: &str) -> String {
     )
 }
 
+/// 匹配数学公式占位符的正则表达式
+/// 在程序生命周期内只编译一次，类似 C++ 中静态编译的正则模式
+static MATH_TOKEN_REGEX: Lazy<Regex> = Lazy::new(|| Regex::new(r"(\{MATH\d+\})").unwrap());
+
 /// 将 Markdown 事件转换为 LaTeX
-/// 这类似于 C++ 中的 Visitor 模式：pulldown-cmark 遍历 AST 时，
-/// 我们"访问"每个节点（Event），然后将其"转换"为对应的 LaTeX 字符串。
-/// 这里的 String 使用 Rust 的 Ownership 语义 —— 每次转换都创建新的字符串，
-/// 类似于 C++ 中每次返回 std::string（而不是返回引用）。
-fn convert_markdown_to_latex(markdown: &str) -> String {
-    // pulldown-cmark 使用 Iterator 模式遍历 AST
-    // 这里的 parser 是一个"懒迭代器"，类似 C++ 中的范围-for 循环
+/// 这类似于 C++ 中的 Visitor 模式
+fn convert_markdown_to_latex(markdown: &str, math_tokens: &HashMap<String, (String, bool)>) -> String {
+    // pulldown-cmark 使用默认选项，不需要 ENABLE_MATH
+    // 因为数学公式已经在预处理阶段提取并替换为占位符了
     let parser = MdParser::new_ext(markdown, Options::all());
 
     let mut latex_content = String::new();
     let mut in_code_block = false;
 
-    // 这里的 for 循环类似 C++ 范围-for：
-    // for (const auto& event : parser) { ... }
     for event in parser {
         match event {
-            // 开始标签：类似于 C++ 中的 Tag Start 事件
+            // 开始标签
             Event::Start(Tag::Heading { level, .. }) => {
-                // 使用 C++ 枚举对比的方式匹配级别
-                // # 对应 level = H1, ## 对应 H2, ...
+                latex_content.push('\n');
                 let latex_tag = match level {
                     HeadingLevel::H1 => "section",
                     HeadingLevel::H2 => "subsection",
                     HeadingLevel::H3 => "subsubsection",
                     HeadingLevel::H4 | HeadingLevel::H5 | HeadingLevel::H6 => "paragraph",
                 };
-                // 直接写入 LaTeX 命令，不要转义反斜杠
                 latex_content.push_str(&format!("\\{}{{", latex_tag));
             }
-            // 结束标签：对应 Markdown 的 ## 结束位置
+            // 结束标签
             Event::End(TagEnd::Heading(_)) => {
                 latex_content.push_str("}\n\n");
             }
-            // 代码块开始
+            // 代码块
             Event::Start(Tag::CodeBlock(_kind)) => {
                 in_code_block = true;
-                // 代码语言信息暂时忽略（可后续用于 listings 宏包）
-                // 前面加空行分隔
                 latex_content.push_str("\n\\begin{verbatim}\n");
             }
-            // 代码块结束
             Event::End(TagEnd::CodeBlock) => {
                 in_code_block = false;
-                // 后面加空行分隔
                 latex_content.push_str("\\end{verbatim}\n\n");
             }
             // 文本内容
             Event::Text(text) => {
                 if in_code_block {
-                    // 代码块内：直接保留原始文本
-                    // 这类似 C++ 中直接 push_back 字符
                     latex_content.push_str(&text);
                 } else {
-                    // 普通文本：处理基本转义
-                    // 在 C++ 中我们可能需要手动转义 &, %, $, #, _, {, }
-                    let escaped = escape_latex(&text);
-                    latex_content.push_str(&escaped);
+                    // 检查是否包含数学公式占位符 {{MATHN}}
+                    if text.contains("{MATH") {
+                        // 使用预编译的正则找出所有占位符并替换
+                        let mut result = String::new();
+                        let mut last_end = 0;
+
+                        for cap in MATH_TOKEN_REGEX.captures_iter(&text) {
+                            let full_match = cap.get(0).unwrap();
+                            let token = cap.get(1).unwrap().as_str();
+
+                            // 对占位符之前的普通文本进行转义
+                            if full_match.start() > last_end {
+                                let before = &text[last_end..full_match.start()];
+                                result.push_str(&escape_latex(before));
+                            }
+
+                            // 替换占位符为数学公式
+                            // 从 HashMap 中直接解包出 (公式内容, is_block) 元组
+                            if let Some((math_content, is_block)) = math_tokens.get(token) {
+                                result.push_str(&convert_math_to_latex(math_content, *is_block));
+                            }
+
+                            last_end = full_match.end();
+                        }
+
+                        // 转义剩余的普通文本
+                        if last_end < text.len() {
+                            result.push_str(&escape_latex(&text[last_end..]));
+                        }
+
+                        latex_content.push_str(&result);
+                    } else {
+                        // 普通文本，直接转义
+                        latex_content.push_str(&escape_latex(&text));
+                    }
                 }
             }
             // 强调/斜体
@@ -113,24 +210,20 @@ fn convert_markdown_to_latex(markdown: &str) -> String {
             Event::End(TagEnd::Strong) => {
                 latex_content.push('}');
             }
-            // 行内代码：pulldown-cmark 使用 Event::Code 表示反引号包围的代码
+            // 行内代码
             Event::Code(code) => {
-                // 行内代码用 \texttt{} 包裹，并转义特殊字符
                 let escaped = escape_latex(&code);
                 latex_content.push_str(&format!("\\texttt{{{}}}", escaped));
             }
-            // 段落（pulldown-cmark 会将段落作为隐式标签）
+            // 段落
             Event::SoftBreak | Event::HardBreak => {
-                // 软换行 -> 空格，硬换行 -> \\\\
                 latex_content.push(' ');
             }
             // 列表项
             Event::Start(Tag::List(_)) => {
-                // 前面加空行分隔
                 latex_content.push_str("\n\\begin{itemize}\n");
             }
             Event::End(TagEnd::List(_)) => {
-                // 后面加空行分隔
                 latex_content.push_str("\\end{itemize}\n\n");
             }
             Event::Start(Tag::Item) => {
@@ -139,7 +232,7 @@ fn convert_markdown_to_latex(markdown: &str) -> String {
             Event::End(TagEnd::Item) => {
                 latex_content.push('\n');
             }
-            // 链接（暂时忽略 URL）
+            // 链接
             Event::Start(Tag::Link { .. }) => {}
             Event::End(TagEnd::Link) => {}
             // 其他事件：忽略
@@ -151,10 +244,7 @@ fn convert_markdown_to_latex(markdown: &str) -> String {
 }
 
 /// 转义 LaTeX 特殊字符
-/// 使用单遍字符处理，避免链式 replace 导致的二次转义问题
-/// 类似 C++ 中手动遍历字符数组并逐个 append 转义字符串
 fn escape_latex(text: &str) -> String {
-    // 预分配足够空间（每个字符最多约 16 字节的转义序列）
     let mut result = String::with_capacity(text.len() * 16);
 
     for c in text.chars() {
@@ -169,7 +259,6 @@ fn escape_latex(text: &str) -> String {
             '}' => result.push_str("\\}"),
             '~' => result.push_str("\\textasciitilde{}"),
             '^' => result.push_str("\\textasciicircum{}"),
-            // 其他字符直接保留（包括普通字母、数字、中文等）
             _ => result.push(c),
         }
     }
@@ -189,18 +278,19 @@ fn main() {
 
     let markdown_content = fs::read_to_string(input_path).expect("无法读取输入文件");
 
+    // 预处理：提取数学公式并替换为占位符
+    let (processed_markdown, math_tokens) = pre_process_math(&markdown_content);
+
     // 转换为 LaTeX
-    let latex_content = convert_markdown_to_latex(&markdown_content);
+    let latex_content = convert_markdown_to_latex(&processed_markdown, &math_tokens);
 
     // 包裹文档模板
     let full_document = latex_template(&latex_content);
 
     // 确定输出路径
-    // 使用 PathBuf 拥有所有权，类似 C++ 的 std::filesystem::path
     let output_path = if let Some(output_arg) = &args.output {
         Path::new(output_arg).to_path_buf()
     } else {
-        // 默认将 .md 替换为 .tex
         let mut output = args.input.clone();
         if let Some(pos) = output.rfind(".md") {
             output.replace_range(pos..pos + 3, ".tex");
@@ -210,7 +300,7 @@ fn main() {
         PathBuf::from(output)
     };
 
-    // 写入输出文件（使用引用，类似 C++ 中的 const&）
+    // 写入输出文件
     let mut file = fs::File::create(&output_path).expect("无法创建输出文件");
     file.write_all(full_document.as_bytes())
         .expect("无法写入输出文件");
