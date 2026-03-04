@@ -34,3 +34,6 @@ Thumbs.db
 
 # pdf
 *.pdf
+
+# claude配置
+.claude/

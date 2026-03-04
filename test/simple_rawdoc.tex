@@ -1,4 +1,5 @@
 \documentclass{ctexart}
+\usepackage{amsmath}
 \pagestyle{plain}
 \ctexset{
     section = {name = {,、}, number = \chinese{section}},
@@ -8,23 +9,56 @@
 
 \begin{document}
 
+
 \section{测试转换}
+
 
 \subsection{测试标题}
 
-这是一个测试文档，用于验证 Markdown 转 LaTeX 的转换功能。这是一个段落，包含一些\textbf{加粗}和\textit{斜体}文本，以及一个行内代码示例 \texttt{let x = 10;}。
+这是一个测试文档，用于验证 Markdown 转 LaTeX 的转换功能。
+
+这是一个段落，包含一些\textbf{加粗}和\textit{斜体}文本，以及一个行内代码示例 \texttt{let x = 10;}。
+
+
 \begin{verbatim}
 fn main() {
     println!("Hello, world!");
 }
 \end{verbatim}
 
-这是行内代码示例：\texttt{let x = 10;}，应该被正确转换为 LaTeX 的 \texttt{\textbackslash{}texttt\{let x = 10;\}}。这是一个列表：
+这是行内代码示例：\texttt{let x = 10;}，应该被正确转换为 LaTeX 的 \texttt{\textbackslash{}texttt\{let x = 10;\}}。
+
+这是一个无序列表：
+
+
 \begin{itemize}
 \item 项目一
 \item 项目二
 \item 项目三
 \end{itemize}
+
+这是一个有序列表：
+
+
+\begin{enumerate}
+\item 第一项
+\item 第二项
+\item 第三项
+\end{enumerate}
+
+
+\subsection{数学公式测试}
+
+这是行内公式：$E=mc^2$，应该原样保留。
+
+这是块级公式：
+
+$$
+\int_{-\infty}^{\infty} e^{-x^2} dx = \sqrt{\pi}
+$$
+
+
+公式中的特殊字符如 \texttt{\textasciicircum{}}, \texttt{\_}, \texttt{\{}, \texttt{\}} 不应被转义。
 
 
 

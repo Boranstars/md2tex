@@ -120,13 +120,18 @@ static MATH_TOKEN_REGEX: Lazy<Regex> = Lazy::new(|| Regex::new(r"(\{MATH\d+\})")
 
 /// 将 Markdown 事件转换为 LaTeX
 /// 这类似于 C++ 中的 Visitor 模式
-fn convert_markdown_to_latex(markdown: &str, math_tokens: &HashMap<String, (String, bool)>) -> String {
+fn convert_markdown_to_latex(
+    markdown: &str,
+    math_tokens: &HashMap<String, (String, bool)>,
+) -> String {
     // pulldown-cmark 使用默认选项，不需要 ENABLE_MATH
     // 因为数学公式已经在预处理阶段提取并替换为占位符了
     let parser = MdParser::new_ext(markdown, Options::all());
 
     let mut latex_content = String::new();
     let mut in_code_block = false;
+    // 记录当前列表类型：Some(true) = 有序列表(enumerate)，Some(false) = 无序列表(itemize)
+    let mut list_type_stack: Vec<bool> = Vec::new();
 
     for event in parser {
         match event {
@@ -219,18 +224,42 @@ fn convert_markdown_to_latex(markdown: &str, math_tokens: &HashMap<String, (Stri
             Event::SoftBreak | Event::HardBreak => {
                 latex_content.push(' ');
             }
-            // 列表项
-            Event::Start(Tag::List(_)) => {
-                latex_content.push_str("\n\\begin{itemize}\n");
+            // 段落结束：添加空行确保 LaTeX 段落间距
+            Event::End(TagEnd::Paragraph) => {
+                latex_content.push_str("\n\n");
+            }
+            // 列表：区分有序和无序
+            // Tag::List(Some(_)) = 有序列表 (1. 2. 3.)
+            // Tag::List(None) = 无序列表 (- * +)
+            Event::Start(Tag::List(start)) => {
+                let is_ordered = start.is_some();
+                list_type_stack.push(is_ordered);
+                if is_ordered {
+                    latex_content.push_str("\n\\begin{enumerate}\n");
+                } else {
+                    latex_content.push_str("\n\\begin{itemize}\n");
+                }
             }
             Event::End(TagEnd::List(_)) => {
-                latex_content.push_str("\\end{itemize}\n\n");
+                let is_ordered = list_type_stack.pop().unwrap_or(false);
+                if is_ordered {
+                    latex_content.push_str("\\end{enumerate}\n\n");
+                } else {
+                    latex_content.push_str("\\end{itemize}\n\n");
+                }
             }
             Event::Start(Tag::Item) => {
                 latex_content.push_str("\\item ");
             }
             Event::End(TagEnd::Item) => {
                 latex_content.push('\n');
+            }
+            // 引用块 (Blockquote)
+            Event::Start(Tag::BlockQuote(_)) => {
+                latex_content.push_str("\n\\begin{quote}\n");
+            }
+            Event::End(TagEnd::BlockQuote(_)) => {
+                latex_content.push_str("\n\\end{quote}\n\n");
             }
             // 链接
             Event::Start(Tag::Link { .. }) => {}
