@@ -19,14 +19,17 @@ jobs:
             binary_name: md2tex
             extension: tar.gz
             arch: linux-amd64
+            is_main: true
           - os: macos-latest
             binary_name: md2tex
             extension: tar.gz
             arch: darwin-arm64
+            is_main: false
           - os: windows-latest
             binary_name: md2tex.exe
             extension: zip
             arch: windows-amd64
+            is_main: false
 
     steps:
       - name: Checkout code
@@ -57,10 +60,29 @@ jobs:
             tar -czvf md2tex-${{ matrix.arch }}.tar.gz md2tex
           fi
 
+      # 仅在主构建（ubuntu）时提取标签消息
+      - name: Fetch tag message
+        if: matrix.is_main == true
+        run: |
+          git fetch --tags --force
+          git tag -l --format='%(contents)' ${{ github.ref_name }} > release_notes.txt
+          cat release_notes.txt
+
+      # 仅在主构建（ubuntu）时创建 Release 并添加说明
+      - name: Create Release with notes
+        if: matrix.is_main == true
+        uses: softprops/action-gh-release@v1
+        with:
+          body_path: release_notes.txt
+          generate_release_notes: true
+          append_body: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      # 所有平台都上传各自的附件
       - name: Upload Release Asset
         uses: softprops/action-gh-release@v1
         with:
           files: target/release/md2tex-${{ matrix.arch }}.${{ matrix.extension }}
-          generate_release_notes: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
