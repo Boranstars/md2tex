@@ -15,7 +15,8 @@
       "Bash(tectonic \"/Users/boran/Program/blog articles/连续控制系统状态空间方程的解.tex\")",
       "Bash(cargo fmt --check)",
       "Bash(cargo fmt)",
-      "Bash(cargo test)"
+      "Bash(cargo test)",
+      "Bash(cargo run -- /Users/boran/Program/rust/md2tex-converter/test/simple_rawdoc.md)"
     ]
   }
 }

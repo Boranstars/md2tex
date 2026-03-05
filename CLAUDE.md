@@ -30,7 +30,17 @@
 
 ## 发布流程
 **重要：必须严格按顺序执行**
+
+0. **环境检查**：执行 `gh --version` 确认 GitHub CLI 可用
+
 1. 更新 `Cargo.toml` 版本号，在执行 git commit 之前，必须先运行 cargo fmt --check, cargo clippy 和 cargo test。只有当本地检查全部通过时，才允许进行发布流程
+
 2. 提交代码并 push 到远程仓库：`git add . && git commit -m "..." && git push origin main`，这会触发 CI 流程进行自动测试
-3. 确认 CI 流程通过后，创建 Git 标签并附加版本说明，如：`git tag -a v0.2.0 -m "Release version 0.2.0: 添加数学公式支持"`
-4. 推送标签到远程仓库，如：`git push origin v0.2.0`，这会触发 Release 流程进行自动构建和发布
+
+3. **监控 CI 状态**：执行 `gh run watch` 实时监控工作流状态
+   - 如果返回 `completed` 且为 `success`，继续执行第 4 步
+   - 如果返回 `failed`，执行 `gh run view --log` 获取错误日志，在本地修复 Bug 后重新提交，严禁继续发布
+
+4. 创建 Git 标签并附加版本说明，如：`git tag -a v0.2.0 -m "Release version 0.2.0: 添加数学公式支持"`
+
+5. 推送标签到远程仓库，如：`git push origin v0.2.0`，这会触发 Release 流程进行自动构建和发布

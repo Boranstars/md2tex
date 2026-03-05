@@ -121,6 +121,8 @@ fn latex_template(content: &str) -> String {
 \usepackage{{amsfonts}}
 \usepackage{{xcolor}}
 \usepackage{{graphicx}}
+\usepackage{{hyperref}}
+\hypersetup{{colorlinks=false}}
 \pagestyle{{plain}}
 \ctexset{{
     section = {{name = {{,、}}, number = \chinese{{section}}}},
@@ -300,8 +302,14 @@ fn convert_markdown_to_latex(
                 latex_content.push_str("}\n\\end{figure}\n\n");
             }
             // 链接
-            Event::Start(Tag::Link { .. }) => {}
-            Event::End(TagEnd::Link) => {}
+            Event::Start(Tag::Link { dest_url, .. }) => {
+                latex_content.push_str("\\href{");
+                latex_content.push_str(&dest_url);
+                latex_content.push_str("}{");
+            }
+            Event::End(TagEnd::Link) => {
+                latex_content.push('}');
+            }
             // 其他事件：忽略
             _ => {}
         }

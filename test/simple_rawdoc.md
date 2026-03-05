@@ -56,3 +56,8 @@ a^2 + b^2 = c^2
 
 
 ![项目印象图](Gemini_Generated_Image_a40x9qa40x9qa40x.png)
+
+## 链接测试
+这是一个链接：[点击这里访问 OpenAI](https://www.openai.com)
+这是一个链接：[点击这里访问 GitHub](https://github.com)
+这是一个链接：[点击这里访问 Rust 官网](https://www.rust-lang.org)
