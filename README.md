@@ -19,6 +19,10 @@
 - **Markdown → LaTeX 转换**：支持标题、加粗、斜体、行内代码、代码块、列表等常用语法
 - **数学公式支持**：原生支持 `$...$` 行内公式和 `$$...$$` 块级公式，自动转换为 `equation*` 环境
 - **公式编号开关**：支持 `-n/--number-equations` 参数全局启用公式编号，也可手动编辑 `.tex` 文件删除星号添加编号
+- **表格支持**：支持 Markdown 表格转换为 LaTeX 三线表（使用 `booktabs` 宏包）
+- **图片支持**：支持 `![alt](path)` 和 `<img>` HTML 标签，自动套用 figure 环境
+- **链接支持**：支持 `[text](url)` 自动转换为 `\href{}{}`
+- **浮动体控制**：支持 `-f/--allow-floats` 参数控制图片和表格是否允许浮动（默认禁止，符合 Markdown 顺序直觉）
 - **中文优化**：自动套用 `ctexart` 模板，中文多级标题使用 `\chinese{}` 编号
 - **单遍转义**：自定义转义算法，避免链式替换导致的二次转义污染
 - **块级格式化**：代码块和列表环境自动前后空行，提升 LaTeX 源码可读性
@@ -61,6 +65,10 @@ md2tex your_document.md output.tex
 md2tex your_document.md -n
 md2tex your_document.md --number-equations
 
+# 允许图片和表格浮动排版（默认禁止）
+md2tex your_document.md -f
+md2tex your_document.md --allow-floats
+
 # 查看帮助
 md2tex --help
 ```
@@ -88,6 +96,9 @@ pdflatex your_document.tex
 | `- item` | `\begin{itemize}\item item\end{itemize}` |
 | `$E=mc^2$` | `$E=mc^2$` (行内公式) |
 | `$$E=mc^2$$` | `\begin{equation*}...\end{equation*}` (块级公式) |
+| `![alt](image.png)` | `\begin{figure}[H]\centering...\end{figure}` |
+| `[text](url)` | `\href{url}{text}` |
+| `\| col1 \| col2 \|` | `\begin{tabular}...\end{tabular}` (三线表) |
 
 ## 技术栈
 
@@ -99,8 +110,10 @@ pdflatex your_document.tex
 ## 未来路线图
 
 - [x] **数学公式原生穿透**：支持 `$...$` 和 `$$...$$` 语法，LaTeX 公式直接透传
-- [ ] **自动图片渲染**：支持 `![alt](path/to/image.png)` 自动转换为 `\includegraphics{}`
-- [ ] **表格支持**：解析 Markdown 表格转换为 LaTeX `tabular` 环境
+- [x] **自动图片渲染**：支持 `![alt](path/to/image.png)` 自动转换为 `\includegraphics{}`
+- [x] **表格支持**：解析 Markdown 表格转换为 LaTeX 三线表（`booktabs`）
+- [x] **链接支持**：`[text](url)` 转换为 `\href{}{}`
+- [x] **浮动体控制**：默认禁止浮动，可通过 `-f` 参数开启
 - [ ] **更多输出格式**：支持 `ctexbook`、`article` 等不同模板
 - [ ] **配置化**：支持 TOML 配置文件自定义模板和行为
 

@@ -1,6 +1,6 @@
 use clap::Parser;
 use once_cell::sync::Lazy;
-use pulldown_cmark::{Event, HeadingLevel, Options, Parser as MdParser, Tag, TagEnd};
+use pulldown_cmark::{Alignment, Event, HeadingLevel, Options, Parser as MdParser, Tag, TagEnd};
 use regex::Regex;
 use std::collections::HashMap;
 use std::fs;
@@ -23,6 +23,10 @@ struct Args {
     /// 为所有块级公式自动添加编号
     #[arg(short = 'n', long = "number-equations")]
     number_equations: bool,
+
+    /// 允许图表（图片和表格）在 LaTeX 中自动浮动排版
+    #[arg(short = 'f', long = "allow-floats")]
+    allow_floats: bool,
 }
 
 /// 预编译正则表达式
@@ -121,6 +125,9 @@ fn latex_template(content: &str) -> String {
 \usepackage{{amsfonts}}
 \usepackage{{xcolor}}
 \usepackage{{graphicx}}
+\usepackage{{booktabs}}
+\usepackage{{array}}
+\usepackage{{float}}
 \usepackage{{hyperref}}
 \hypersetup{{colorlinks=false}}
 \pagestyle{{plain}}
@@ -165,6 +172,7 @@ fn convert_markdown_to_latex(
     markdown: &str,
     math_tokens: &HashMap<String, (String, bool)>,
     number_equations: bool,
+    allow_floats: bool,
 ) -> String {
     // pulldown-cmark 使用默认选项，不需要 ENABLE_MATH
     // 因为数学公式已经在预处理阶段提取并替换为占位符了
@@ -174,6 +182,10 @@ fn convert_markdown_to_latex(
     let mut in_code_block = false;
     // 记录当前列表类型：Some(true) = 有序列表(enumerate)，Some(false) = 无序列表(itemize)
     let mut list_type_stack: Vec<bool> = Vec::new();
+    // 记录当前单元格位置，用于表格中控制列分隔符
+    let mut cell_index = 0;
+    // 浮动体位置参数：[H] 禁止浮动，[htbp] 允许浮动
+    let float_placement = if allow_floats { "[htbp]" } else { "[H]" };
 
     for event in parser {
         match event {
@@ -309,7 +321,10 @@ fn convert_markdown_to_latex(
             }
             // 图片
             Event::Start(Tag::Image { dest_url, .. }) => {
-                latex_content.push_str("\n\\begin{figure}[htbp]\n\\centering\n\\includegraphics[width=0.8\\textwidth]{");
+                latex_content.push_str(&format!(
+                    "\n\\begin{{figure}}{}\n\\centering\n\\includegraphics[width=0.8\\textwidth]{{",
+                    float_placement
+                ));
                 latex_content.push_str(&dest_url);
                 latex_content.push_str("}\n\\caption{");
             }
@@ -391,7 +406,10 @@ fn convert_markdown_to_latex(
                     };
 
                     // 生成 LaTeX 图片环境
-                    latex_content.push_str("\n\\begin{figure}[htbp]\n\\centering\n");
+                    latex_content.push_str(&format!(
+                        "\n\\begin{{figure}}{}\n\\centering\n",
+                        float_placement
+                    ));
                     latex_content
                         .push_str(&format!("\\includegraphics{}{{{}}}", width_bracket, src));
 
@@ -402,6 +420,46 @@ fn convert_markdown_to_latex(
                     latex_content.push_str("\n\\end{figure}\n\n");
                 }
                 // <u> 和 </u> 标签暂时忽略
+            }
+            // 表格处理
+            Event::Start(Tag::Table(alignments)) => {
+                // 映射对齐方式: Left->l, Center->c, Right->r, None->l
+                let align_str: String = alignments
+                    .iter()
+                    .map(|a| match a {
+                        Alignment::Left => "l",
+                        Alignment::Right => "r",
+                        Alignment::Center => "c",
+                        Alignment::None => "l",
+                    })
+                    .collect();
+
+                latex_content.push_str(&format!(
+                    "\n\\begin{{table}}{}\n\\centering\n\\begin{{tabular}}{{{}}}\n\\toprule\n",
+                    float_placement, align_str
+                ));
+            }
+            Event::End(TagEnd::Table) => {
+                latex_content.push_str("\\bottomrule\n\\end{tabular}\n\\end{table}\n\n");
+            }
+            // 表头或行开始：重置单元格计数器
+            Event::Start(Tag::TableHead) | Event::Start(Tag::TableRow) => {
+                cell_index = 0;
+            }
+            // 表头结束：添加中线
+            Event::End(TagEnd::TableHead) => {
+                latex_content.push_str(" \\\\\n\\midrule\n");
+            }
+            // 行结束：添加换行
+            Event::End(TagEnd::TableRow) => {
+                latex_content.push_str(" \\\\\n");
+            }
+            // 单元格开始：添加列分隔符
+            Event::Start(Tag::TableCell) => {
+                if cell_index > 0 {
+                    latex_content.push_str(" & ");
+                }
+                cell_index += 1;
             }
             // 其他事件：忽略
             _ => {}
@@ -450,8 +508,12 @@ fn main() {
     let (processed_markdown, math_tokens) = pre_process_math(&markdown_content);
 
     // 转换为 LaTeX
-    let latex_content =
-        convert_markdown_to_latex(&processed_markdown, &math_tokens, args.number_equations);
+    let latex_content = convert_markdown_to_latex(
+        &processed_markdown,
+        &math_tokens,
+        args.number_equations,
+        args.allow_floats,
+    );
 
     // 包裹文档模板
     let full_document = latex_template(&latex_content);

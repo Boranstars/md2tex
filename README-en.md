@@ -19,6 +19,10 @@ This project is a **Vibe Coding** exploration experiment—AI-assisted efficient
 - **Markdown → LaTeX Conversion**: Supports headings, bold, italic, inline code, code blocks, lists, and more
 - **Math Formula Support**: Native support for `$...$` inline and `$$...$$` block formulas, auto-converted to `equation*` environment
 - **Equation Numbering Toggle**: Supports `-n/--number-equations` flag for global equation numbering, or manually edit `.tex` file by removing the asterisk
+- **Table Support**: Markdown tables converted to LaTeX three-line tables (using `booktabs` package)
+- **Image Support**: Supports `![alt](path)` and `<img>` HTML tags, auto-wrapped in figure environment
+- **Link Support**: Supports `[text](url)` auto-converted to `\href{}{}`
+- **Float Control**: Supports `-f/--allow-floats` flag to control float behavior (disabled by default, aligns with Markdown order intuition)
 - **Chinese Optimization**: Auto-applies `ctexart` template with `\chinese{}` numbering for multi-level Chinese headings
 - **Single-Pass Escaping**: Custom escaping algorithm avoids double-escaping pollution from chained replacements
 - **Block-Level Formatting**: Code blocks and list environments automatically have blank lines before/after for better LaTeX source readability
@@ -61,6 +65,10 @@ md2tex your_document.md output.tex
 md2tex your_document.md -n
 md2tex your_document.md --number-equations
 
+# Allow figures and tables to float (disabled by default)
+md2tex your_document.md -f
+md2tex your_document.md --allow-floats
+
 # View help
 md2tex --help
 ```
@@ -88,6 +96,9 @@ pdflatex your_document.tex
 | `- item` | `\begin{itemize}\item item\end{itemize}` |
 | `$E=mc^2$` | `$E=mc^2$` (inline) |
 | `$$E=mc^2$$` | `\begin{equation*}...\end{equation*}` (block) |
+| `![alt](image.png)` | `\begin{figure}[H]\centering...\end{figure}` |
+| `[text](url)` | `\href{url}{text}` |
+| `| col1 | col2 |` | `\begin{tabular}...\end{tabular}` (three-line table) |
 
 ## Tech Stack
 
@@ -99,8 +110,10 @@ pdflatex your_document.tex
 ## Roadmap
 
 - [x] **Math Formula Pass-through**: Support `$...$` and `$$...$$` syntax, LaTeX formulas passed through directly
-- [ ] **Auto Image Rendering**: Support `![alt](path/to/image.png)` auto-converted to `\includegraphics{}`
-- [ ] **Table Support**: Parse Markdown tables to LaTeX `tabular` environment
+- [x] **Auto Image Rendering**: Support `![alt](path/to/image.png)` auto-converted to `\includegraphics{}`
+- [x] **Table Support**: Markdown tables converted to LaTeX three-line tables (`booktabs`)
+- [x] **Link Support**: `[text](url)` converted to `\href{}{}`
+- [x] **Float Control**: Disabled by default, can enable with `-f` flag
 - [ ] **More Output Formats**: Support `ctexbook`, `article`, and other templates
 - [ ] **Configuration**: Support TOML config file for template and behavior customization
 

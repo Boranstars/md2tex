@@ -4,6 +4,9 @@
 \usepackage{amsfonts}
 \usepackage{xcolor}
 \usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage{array}
+\usepackage{float}
 \usepackage{hyperref}
 \hypersetup{colorlinks=false}
 \pagestyle{plain}
@@ -86,7 +89,7 @@ a^2 + b^2 = c^2
 \subsection{图片测试}
 
 
-\begin{figure}[htbp]
+\begin{figure}[H]
 \centering
 \includegraphics[width=0.8\textwidth]{Gemini_Generated_Image_a40x9qa40x9qa40x.png}
 \caption{项目印象图}
@@ -94,10 +97,127 @@ a^2 + b^2 = c^2
 
 
 
+下面是不同大小的图片测试：
+
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.8\textwidth]{Gemini_Generated_Image_a40x9qa40x9qa40x.png}
+\caption{图片测试1}
+\end{figure}
+
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.8\textwidth]{Gemini_Generated_Image_a40x9qa40x9qa40x.png}
+\caption{图片测试2}
+\end{figure}
+
+其他的html width属性测试：
+
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.5\textwidth]{Gemini_Generated_Image_a40x9qa40x9qa40x.png}
+\caption{图片测试3}
+\end{figure}
+
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.8\textwidth]{Gemini_Generated_Image_a40x9qa40x9qa40x.png}
+\caption{图片测试4}
+\end{figure}
+
 
 \subsection{链接测试}
 
-这是一个链接：\href{https://www.openai.com}{点击这里访问 OpenAI} 这是一个链接：\href{https://github.com}{点击这里访问 GitHub} 这是一个链接：\href{https://www.rust-lang.org}{点击这里访问 Rust 官网}
+
+\begin{itemize}
+\item 这是一个链接：\href{https://www.openai.com}{点击这里访问 OpenAI}
+\item 这是一个链接：\href{https://github.com}{点击这里访问 GitHub}
+\item 这是一个链接：\href{https://www.rust-lang.org}{点击这里访问 Rust 官网}
+\end{itemize}
+
+
+\subsection{表格测试}
+
+这是一个简单的表格：
+
+
+\begin{table}[H]
+\centering
+\begin{tabular}{lcr}
+\toprule
+左对齐 & 居中 & 右对齐 \\
+\midrule
+内容1 & 内容2 & 内容3 \\
+内容4 & 内容5 & 内容6 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+第二个表格：
+
+
+\begin{table}[H]
+\centering
+\begin{tabular}{ll}
+\toprule
+姓名 & 年龄 \\
+\midrule
+张三 & 25 \\
+李四 & 30 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+复杂表格：
+
+
+\begin{table}[H]
+\centering
+\begin{tabular}{lccr}
+\toprule
+参数名称 & 符号 & 默认值 & 单位 \\
+\midrule
+采样频率 & $f_s$ & 1000 & Hz \\
+截止频率 & $\omega_c$ & 50 & rad/s \\
+阻尼比 & $\zeta$ & 0.707 & - \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+带公式的表格：
+
+
+\begin{table}[H]
+\centering
+\begin{tabular}{ll}
+\toprule
+参数 & 公式 \\
+\midrule
+频率响应 & $H(j\omega) = \frac{1}{1 + j\omega/\omega_c}$ \\
+阻尼比 & $\zeta = \frac{c}{2\sqrt{mk}}$ \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+带空行的表格：
+
+
+\begin{table}[H]
+\centering
+\begin{tabular}{lll}
+\toprule
+实验编号 & 观测现象描述 & 备注 \\
+\midrule
+EXP-01 & 系统在输入阶跃信号后出现小幅震荡，超调量约 15\%。 & 正常 \\
+EXP-02 &  & 数据待补 \\
+EXP-03 & 调整 PID 参数后，稳态误差消除，收敛速度明显加快。 & \textbf{推荐参数} \\
+\bottomrule
+\end{tabular}
+\end{table}
 
 
 
