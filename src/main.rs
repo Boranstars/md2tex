@@ -144,6 +144,21 @@ fn latex_template(content: &str) -> String {
 /// 在程序生命周期内只编译一次，类似 C++ 中静态编译的正则模式
 static MATH_TOKEN_REGEX: Lazy<Regex> = Lazy::new(|| Regex::new(r"(\{MATH\d+\})").unwrap());
 
+/// HTML 标签正则表达式
+/// 匹配 <br> 或 <br/> 换行标签
+static HTML_BR_REGEX: Lazy<Regex> = Lazy::new(|| Regex::new(r"<br\s*/?>").unwrap());
+
+/// 匹配 <img ...> 标签
+/// 提取 src、alt、width 属性
+/// 使用非贪婪匹配 .*? 捕获属性值，支持双引号或单引号
+/// C++ 中类似的模式匹配需要手写解析器，而 Rust 可以直接用正则
+static HTML_IMG_REGEX: Lazy<Regex> =
+    Lazy::new(|| Regex::new(r#"<img\s+[^>]*src\s*=\s*["']([^"']+)["'][^>]*>"#).unwrap());
+
+/// 提取 img 标签中所有属性的正则（用于获取 alt 和 width）
+static HTML_IMG_ATTR_REGEX: Lazy<Regex> =
+    Lazy::new(|| Regex::new(r#"(\w+)\s*=\s*["']([^"']*)["']"#).unwrap());
+
 /// 将 Markdown 事件转换为 LaTeX
 /// 这类似于 C++ 中的 Visitor 模式
 fn convert_markdown_to_latex(
@@ -309,6 +324,84 @@ fn convert_markdown_to_latex(
             }
             Event::End(TagEnd::Link) => {
                 latex_content.push('}');
+            }
+            // HTML 标签处理：<br>、<img> 等
+            Event::Html(html) | Event::InlineHtml(html) => {
+                let html_str = html.trim();
+
+                // 处理 <br> 换行标签
+                if HTML_BR_REGEX.is_match(html_str) {
+                    latex_content.push_str("\\newline ");
+                    continue;
+                }
+
+                // 处理 <img> 标签
+                if let Some(caps) = HTML_IMG_REGEX.captures(html_str) {
+                    let src = caps.get(1).map(|m| m.as_str()).unwrap_or("");
+
+                    // 使用另一个正则提取所有属性
+                    let mut alt = String::new();
+                    let mut width = String::new();
+
+                    for attr_cap in HTML_IMG_ATTR_REGEX.captures_iter(html_str) {
+                        let attr_name = attr_cap.get(1).map(|m| m.as_str()).unwrap_or("");
+                        let attr_value = attr_cap.get(2).map(|m| m.as_str()).unwrap_or("");
+
+                        match attr_name {
+                            "alt" => alt = attr_value.to_string(),
+                            "width" => width = attr_value.to_string(),
+                            _ => {}
+                        }
+                    }
+
+                    // 转换宽度值
+                    let width_bracket = if !width.is_empty() {
+                        // 处理不同的 width 格式：
+                        // - "50%" -> 转换为 0.5
+                        // - "0.5" -> 直接使用
+                        // - "100px" -> 忽略单位，简单处理
+                        let clean_width = width
+                            .trim_end_matches("px")
+                            .trim_end_matches("%")
+                            .trim()
+                            .to_string();
+
+                        if width.ends_with('%') {
+                            // 百分比格式：50% -> 0.5
+                            if let Ok(pct) = clean_width.parse::<f64>() {
+                                format!("[width={}\\textwidth]", pct / 100.0)
+                            } else {
+                                "[width=0.8\\textwidth]".to_string()
+                            }
+                        } else if let Ok(num) = clean_width.parse::<f64>() {
+                            // 纯数字：0.5 -> [width=0.5\textwidth]
+                            if num <= 1.0 {
+                                format!("[width={}\\textwidth]", num)
+                            } else {
+                                // 如果 >1，可能是像素值或其他单位，默认使用 0.8
+                                "[width=0.8\\textwidth]".to_string()
+                            }
+                        } else {
+                            // 无法解析，默认使用 0.8
+                            "[width=0.8\\textwidth]".to_string()
+                        }
+                    } else {
+                        // 没有 width 属性，默认使用 0.8
+                        "[width=0.8\\textwidth]".to_string()
+                    };
+
+                    // 生成 LaTeX 图片环境
+                    latex_content.push_str("\n\\begin{figure}[htbp]\n\\centering\n");
+                    latex_content
+                        .push_str(&format!("\\includegraphics{}{{{}}}", width_bracket, src));
+
+                    if !alt.is_empty() {
+                        latex_content.push_str(&format!("\n\\caption{{{}}}", escape_latex(&alt)));
+                    }
+
+                    latex_content.push_str("\n\\end{figure}\n\n");
+                }
+                // <u> 和 </u> 标签暂时忽略
             }
             // 其他事件：忽略
             _ => {}

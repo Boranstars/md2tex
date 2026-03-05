@@ -16,7 +16,10 @@
       "Bash(cargo fmt --check)",
       "Bash(cargo fmt)",
       "Bash(cargo test)",
-      "Bash(cargo run -- /Users/boran/Program/rust/md2tex-converter/test/simple_rawdoc.md)"
+      "Bash(cargo run -- /Users/boran/Program/rust/md2tex-converter/test/simple_rawdoc.md)",
+      "Bash(cargo run -- test/simple_rawdoc.md test/output.tex)",
+      "Bash(tectonic --version)",
+      "Bash(tectonic output.tex)"
     ]
   }
 }
